@@ -15,8 +15,9 @@ on the absolute values:
     quadratic   |speed| = c0 + c1*|V| + c2*|V|^2    ->  curvature c2, low-speed Ke
                 fitted on all the moving points
 
-The linear fit on low-speed points is intended to estimate the back-EMF constant
-with less influence from high-speed effects. The quadratic fit describes curvature
+The linear fit on low-speed points estimates an effective commanded-voltage/speed
+constant. It is not a direct back-EMF measurement; inverter scaling and mechanical
+losses can bias it. The quadratic fit describes curvature
 across the measured moving-speed range. This version uses np.linalg.lstsq for both
 fits and does not calculate Student-t statistics or confidence intervals.
 
@@ -32,9 +33,9 @@ Usage
     # (use 'inf' to fit all the moving points)
     python velocity_fit.py --csv speed_data.csv --max-speed-linear 50
 
-    # optionally also estimate Kt and phase resistance, with the torque constant
-    # (N*m/V) measured with torque_fit.py
-    python velocity_fit.py --csv speed_data.csv --torque-const 0.0123
+    # optionally calculate a rough, indirect resistance estimate from the
+    # torque-per-commanded-voltage slope (N*m/V) from torque_fit_lstsq.py
+    python velocity_fit.py --csv speed_data.csv --torque-per-volt 0.0123
 
     # voltage needed for given speeds (rpm), from the fits
     python velocity_fit.py --csv speed_data.csv --speed 100 200 300
@@ -331,12 +332,12 @@ def analyse_direction(data, sign, vmin, vmax, min_speed, max_speed_linear):
 
 # ---------------------------------------------------------------- report
 
-def report(dirs, torque_const):
+def report(dirs, torque_per_volt):
     names = {1: "POSITIVE voltage", -1: "NEGATIVE voltage"}
     ok = [d for d in dirs if d and d["fit"]]
 
     print("\n================ Voltage -> speed fit ================")
-    print("Linear model:     |speed| = a*|V| + b            ->  Ke = 1/a,  V_f = -b/a")
+    print("Linear model:     |speed| = a*|V| + b -> Ke,eff = 1/a, V_f = -b/a")
     print("                  (fitted only on low-speed points, see --max-speed-linear)")
     print("Quadratic model:  |speed| = c0 + c1*|V| + c2*|V|^2   (speed in rad/s, all moving points)")
 
@@ -368,7 +369,7 @@ def report(dirs, torque_const):
             f"  slope a  = {f['a']:.3f} rad/s per V "
             f"= {f['kv_rpm']:.1f} rpm/V"
         )
-        print(f"  Ke       = {f['ke']:.5f} V*s/rad")
+        print(f"  Ke,eff   = {f['ke']:.5f} V*s/rad (effective commanded-voltage/speed constant, not directly measured BEMF)")
         print(f"  V_f      = {f['vf']:.4f} V (friction / cogging voltage estimate)")
         print(f"  R^2 = {f['r2']:.5f}    RMS residual = {f['rmse']:.3f} rad/s")
 
@@ -401,7 +402,7 @@ def report(dirs, torque_const):
                 else "at the lowest fitted voltage (no zero-speed crossing in the fitted range)"
             )
             print(f"  Low-speed slope {q['slope0']:.3f} rad/s per V at |V| = {q['v0']:.3f} V ({ref})")
-            print(f"  Ke(low speed) = {q['ke_low']:.5f} V*s/rad")
+            print(f"  Ke,eff(low speed) = {q['ke_low']:.5f} V*s/rad (effective commanded-voltage/speed constant)")
             print(
                 f"  At |V| = {q['v_top']:.2f} V the speed is {-q['deficit']:.2f} rad/s "
                 f"({-q['deficit_pct']:.1f} %) below the low-speed tangent"
@@ -442,12 +443,12 @@ def report(dirs, torque_const):
 
         print("\n--- Summary ---")
         print(
-            f"  Mean Ke (linear fit, low speeds) = {ke_lin:.5f} V*s/rad "
+            f"  Mean Ke,eff (linear fit, low speeds) = {ke_lin:.5f} V*s/rad "
             f"(speed constant {RPM_PER_RAD_S / ke_lin:.1f} rpm/V of commanded voltage)"
         )
         if ke_low is not None:
             print(
-                f"  Mean Ke (quadratic, low speed)   = {ke_low:.5f} V*s/rad "
+                f"  Mean Ke,eff (quadratic, low speed) = {ke_low:.5f} V*s/rad "
                 f"(speed constant {RPM_PER_RAD_S / ke_low:.1f} rpm/V)"
             )
 
@@ -467,19 +468,23 @@ def report(dirs, torque_const):
             print("  The fitted quadratic coefficients show no measurable curvature in the fitted data.")
         print("  No curvature significance test or coefficient confidence intervals are calculated in this version.")
 
-        if torque_const:
+        if torque_per_volt is not None and torque_per_volt > 0:
             for label, ke in (("linear", ke_lin), ("low speed", ke_low)):
                 if ke is None:
                     continue
-                kt = 1.5 * ke
+                kt_est = 1.5 * ke
+                r_est = kt_est / torque_per_volt
                 print(
-                    f"  Ke ({label}): Kt = 1.5*Ke = {kt:.5f} N*m/A, "
-                    f"phase resistance R = Kt / k = {kt / torque_const:.3f} ohm "
-                    f"(k = {torque_const} N*m/V)"
+                    f"  Ke,eff ({label}) = {ke:.5f} V*s/rad (commanded-voltage/speed slope)\n"
+                    f"  Kt,eff = 1.5*Ke,eff = {kt_est:.5f} N*m/A; "
+                    f"indirect R estimate = Kt,eff/k = {r_est:.3f} ohm"
                 )
             print(
-                "  Compare R with a multimeter (phase-to-phase resistance / 2 for a star-wired motor).\n"
-                "  Kt = 1.5*Ke assumes SimpleFOC's amplitude-invariant convention."
+                "  WARNING: this is an indirect estimate, not a resistance measurement.\n"
+                "  Ke is inferred from commanded voltage vs free-shaft speed, so inverter voltage scaling,\n"
+                "  friction, and calibration conventions can bias the result.\n"
+                "  For this FIT1034 delta connection, the SimpleFOC conversion is R_phase = 1.5*R_line-line.\n"
+                "  Measure line-to-line resistance directly and use the convention required by your library version."
             )
     print("======================================================\n")
 
@@ -581,7 +586,7 @@ def print_inverse_table(dirs, queries_rpm):
     for i in invs:
         name = names[i["sign"]]
         print(
-            f"    {name} linear   : |V| = {i['vf']:.4f} {signed(i['ke'], 5)}·|ω| "
+            f"    {name} linear   : |V_command| = {i['vf']:.4f} {signed(i['ke'], 5)}·|ω| "
             f"(fitted for |ω| from {i['lin_w_min']:.1f} to {i['lin_w_max']:.1f} rad/s)"
         )
         if i["quad"] is not None:
@@ -697,7 +702,7 @@ def plot(data, dirs, save_fig):
                 s * vv, s * (f["a"] * vv + f["b"]), "-", color=color,
                 label=(f"{labels[s]} linear (|ω| ≤ {d['max_speed_linear']:g} rad/s): "
                        f"|ω| = {f['a']:.2f}·|V| {signed(f['b'], 2)} rad/s\n"
-                       f"Ke = {f['ke']:.4f} V·s/rad, V_f = {f['vf']:.3f} V, R² = {f['r2']:.4f}"),
+                       f"Ke,eff = {f['ke']:.4f} V·s/rad, V_f = {f['vf']:.3f} V, R² = {f['r2']:.4f}"),
             )
             if d["v"].max() > v_hi:
                 vv2 = np.linspace(v_hi, d["v"].max(), 30)
@@ -763,8 +768,9 @@ def main():
     ap.add_argument("--vmin", type=float, default=0.0, help="ignore points below this |voltage| (V)")
     ap.add_argument("--vmax", type=float, default=float("inf"), help="ignore points above this |voltage| (V)")
     ap.add_argument(
-        "--torque-const", type=float, default=None,
-        help="torque constant k (N*m/V) from torque_fit.py: also estimates Kt and phase resistance",
+        "--torque-per-volt", "--torque-const", dest="torque_per_volt",
+        type=float, default=None,
+        help="torque-vs-commanded-voltage slope k (N*m/V) from torque_fit_lstsq.py; enables a rough indirect resistance estimate (old --torque-const alias accepted)",
     )
     ap.add_argument(
         "--speed", type=float, nargs="+", default=None, metavar="RPM",
@@ -775,6 +781,17 @@ def main():
     )
     ap.add_argument("--no-show", action="store_true", help="do not open the plot window")
     args = ap.parse_args()
+
+    if args.vmin < 0 or args.vmax < args.vmin:
+        ap.error("require 0 <= --vmin <= --vmax")
+    if args.min_speed is not None and args.min_speed < 0:
+        ap.error("--min-speed must be nonnegative")
+    if args.max_speed_linear <= 0:
+        ap.error("--max-speed-linear must be positive")
+    if args.torque_per_volt is not None and args.torque_per_volt <= 0:
+        ap.error("--torque-per-volt must be positive")
+    if args.speed is not None and any(speed < 0 for speed in args.speed):
+        ap.error("--speed values must be nonnegative RPM")
 
     if args.port:
         data = capture(args.port, args.baud)
@@ -790,6 +807,14 @@ def main():
     if data.ndim != 2 or data.shape[1] != 5:
         sys.exit("ERROR: data must contain five columns: point, voltage_V, speed_rad_s, speed_rpm, std_rad_s")
 
+    finite = np.all(np.isfinite(data), axis=1)
+    dropped = int(len(data) - np.count_nonzero(finite))
+    if dropped:
+        print(f"WARNING: dropping {dropped} row(s) containing non-finite values.")
+        data = data[finite]
+    if len(data) < 3:
+        sys.exit("ERROR: fewer than 3 finite data rows remain.")
+
     dirs = [
         analyse_direction(data, +1, args.vmin, args.vmax, args.min_speed, args.max_speed_linear),
         analyse_direction(data, -1, args.vmin, args.vmax, args.min_speed, args.max_speed_linear),
@@ -800,7 +825,7 @@ def main():
             "(try a higher --max-speed-linear)."
         )
 
-    report(dirs, args.torque_const)
+    report(dirs, args.torque_per_volt)
     print_inverse_table(dirs, args.speed)
     plot(data, dirs, args.save_fig)
     if any(d and d["fit"] for d in dirs):
