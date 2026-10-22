@@ -24,36 +24,31 @@
 
 #include <FOC_lar.h>
 
-
 // Motor definitions
 
-#define MOTOR_POLE_PAIRS NOT_SET    // measured with find_pole_pairs_number
-#define MOTOR_SUPPLY_VOLTAGE 12.0f  // motor supply
-#define MOTOR_VOLTAGE_LIMIT 3.0f    // last voltage of each sweep (+ and -)
-#define SENSOR_ALIGN_VOLTAGE 1.0f   // voltage used for FOC sensor alignment
-
+#define MOTOR_POLE_PAIRS NOT_SET   // measured with find_pole_pairs_number
+#define MOTOR_SUPPLY_VOLTAGE 12.0f // motor supply
+#define MOTOR_VOLTAGE_LIMIT 3.0f   // last voltage of each sweep (+ and -)
+#define SENSOR_ALIGN_VOLTAGE 1.0f  // voltage used for FOC sensor alignment
 
 // Sweep definitions
 
-#define DATA_POINTS 50              // equal voltage increases per direction
-#define STAB_TIME_S 3.0f            // wait after every increase, for the speed to settle (s)
-#define MEAS_TIME_S 1.0f            // averaging window after the wait (s)
-#define COAST_TIME_S 3.0f           // 0 V pause between the + and - sweeps (s)
-
+#define DATA_POINTS 50    // equal voltage increases per direction
+#define STAB_TIME_S 3.0f  // wait after every increase, for the speed to settle (s)
+#define MEAS_TIME_S 1.0f  // averaging window after the wait (s)
+#define COAST_TIME_S 3.0f // 0 V pause between the + and - sweeps (s)
 
 #if DATA_POINTS < 1
 #error "DATA_POINTS must be at least 1"
 #endif
 
-#define RAD_S_TO_RPM 9.5492966f     // 60 / (2*PI)
-
+#define RAD_S_TO_RPM 9.5492966f // 60 / (2*PI)
 
 // SimpleFOCMini v1.0 + Arduino UNO: pole pairs, IN1, IN2, IN3, EN
 FOC_lar foc(MOTOR_POLE_PAIRS, 11, 10, 9, 8);
 
 bool sweep_done_once = false;
 bool printing = true;
-
 
 void printHelp()
 {
@@ -64,7 +59,6 @@ void printHelp()
     Serial.println(F("h : this help"));
     Serial.println(F("***"));
 }
-
 
 // Handles the serial keys that work everywhere (idle and during a sweep).
 // Returns true when 'x' was received.
@@ -98,7 +92,6 @@ bool handleSerial(bool &start_requested)
 
     return abort;
 }
-
 
 // Runs the motor loop for a given time.
 // Returns false if 'x' was received (abort).
@@ -234,7 +227,6 @@ void runSweep()
     Serial.println(F("#Send 's' to repeat."));
 }
 
-
 void setup()
 {
     Serial.begin(115200);
@@ -246,12 +238,12 @@ void setup()
     // motor: the shaft must be free during the alignment
     if (!foc.begin(MOTOR_SUPPLY_VOLTAGE, MOTOR_VOLTAGE_LIMIT, SENSOR_ALIGN_VOLTAGE))
     {
-        while (1);
+        while (1)
+            ;
     }
 
     printHelp();
 }
-
 
 void loop()
 {

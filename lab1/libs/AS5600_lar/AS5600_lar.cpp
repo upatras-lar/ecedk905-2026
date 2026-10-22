@@ -418,7 +418,6 @@ double get_velocity_ema_filter_alpha(void)
     return velocity_ema_alpha;
 }
 
-
 // Print helpers
 
 String fixed_uint(unsigned int value, unsigned int width)

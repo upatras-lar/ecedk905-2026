@@ -433,13 +433,40 @@ a_0=\left.\frac{dw}{dV}\right|_{V_0}=c_1+2c_2V_0,
 \qquad K_{e,\mathrm{low}}=\frac{1}{a_0}.
 $$
 
-The quadratic intercept $c_0$ is a curve-fitting parameter, not a physical motor constant. The low-speed estimate is preferred for the rig card because the speed curve can bend downward at higher speeds owing to commutation/control-loop delay, winding inductance, and drag/iron losses. If `--torque-const` is supplied, the script also uses the SimpleFOC convention to estimate
+The quadratic intercept $c_0$ is a curve-fitting parameter, not a physical motor constant. The low-speed estimate is preferred for the rig card because the speed curve can bend downward at higher speeds owing to commutation and control-loop delays, winding inductance, and drag or iron losses.
+
+If `--torque-const` is supplied, the script also computes an approximate model-based estimate of the motor phase resistance:
 
 $$
-K_t=\frac{3}{2}K_e,\qquad R\approx\frac{K_t}{k}=\frac{3K_e}{2k},
+K_t=\frac{3}{2}K_e,\qquad
+k=\frac{K_t}{R},\qquad
+R_{\mathrm{est}}=\frac{K_t}{k}
+=\frac{3K_e}{2k},
 $$
 
-which can be compared with the resistance measured using a multimeter. Use a consistent low-speed $K_e$ estimate in this cross-check.
+where $k$ is the fitted torque-per-commanded-voltage slope and $R_{\mathrm{est}}$ is the estimated resistance of an individual motor winding. This estimate is indirect, not a direct resistance measurement: $K_e$ is inferred from commanded voltage versus free-shaft speed, and the fitted $k$ can be affected by voltage scaling, friction, and control behavior. Treat $R_{\mathrm{est}}$ as an approximate consistency check rather than a precise measurement.
+
+For the balanced delta-connected FIT1034, the resistance measured by a multimeter between any two motor terminals is the line-to-line resistance, $R_{LL}$. Assuming all three windings have equal resistance, the measured resistance is one winding in parallel with the other two windings in series:
+
+$$
+R_{LL}=R_\Delta\parallel(2R_\Delta)
+=\frac{2}{3}R_\Delta,
+$$
+
+where $R_\Delta$ is the resistance of an individual physical delta winding. Therefore,
+
+$$
+R_\Delta=\frac{3}{2}R_{LL}.
+$$
+
+Since $R_{\mathrm{est}}$ estimates the phase resistance $R$, compare it with the measured line-to-line resistance using
+
+$$
+\boxed{R_{\mathrm{est}}\approx R_\Delta
+=\frac{3}{2}R_{LL}.}
+$$
+
+This comparison is approximate because $R_{\mathrm{est}}$ is inferred from the motor's fitted torque and speed behavior rather than measured directly with a multimeter.
 
 ### Task 2.9 — friction ring-down
 

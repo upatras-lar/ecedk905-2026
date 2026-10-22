@@ -14,14 +14,12 @@ FOC_lar::FOC_lar(int pole_pairs, int pin_a, int pin_b, int pin_c, int pin_en)
 {
 }
 
-
 // Sensor info: angle and magnet status (see AS5600_lar)
 
 void FOC_lar::printSensorInfo(Print &out)
 {
     print_sensor_info(out);
 }
-
 
 // Step 1: sensor + driver + motor init
 
@@ -71,7 +69,6 @@ bool FOC_lar::beginHardware(float supply_voltage,
     return true;
 }
 
-
 // Step 2: FOC alignment
 
 bool FOC_lar::alignFOC(Print &log)
@@ -118,13 +115,12 @@ bool FOC_lar::alignFOC(float zero_electric_angle, Direction sensor_direction, Pr
         return false;
     }
 
-    resetReportedZero();                    // establish reporting zero position
-    AS5600_lar_reset_velocity_reference();  // reset velocity calculation origin
-    target_voltage = 0.0f;                  // zero torque
+    resetReportedZero();                   // establish reporting zero position
+    AS5600_lar_reset_velocity_reference(); // reset velocity calculation origin
+    target_voltage = 0.0f;                 // zero torque
 
     return true;
 }
-
 
 // Full init
 
@@ -142,7 +138,6 @@ bool FOC_lar::begin(float supply_voltage,
     return alignFOC(log);
 }
 
-
 bool FOC_lar::begin(float supply_voltage,
                     float voltage_limit,
                     float align_voltage,
@@ -158,7 +153,6 @@ bool FOC_lar::begin(float supply_voltage,
 
     return alignFOC(zero_electric_angle, sensor_direction, log);
 }
-
 
 // Pole pairs estimation
 
@@ -245,7 +239,8 @@ int FOC_lar::findPolePairs(float voltage, PolePairsResult *result, Print *log)
             log->println(F("ERROR: Motor did not move enough. Increase the sweep voltage."));
         }
 
-        if (result) *result = r;
+        if (result)
+            *result = r;
         return 0;
     }
 
@@ -279,7 +274,8 @@ int FOC_lar::findPolePairs(float voltage, PolePairsResult *result, Print *log)
             log->println(F("ERROR: Invalid PP estimate."));
         }
 
-        if (result) *result = r;
+        if (result)
+            *result = r;
         return 0;
     }
 
@@ -297,10 +293,10 @@ int FOC_lar::findPolePairs(float voltage, PolePairsResult *result, Print *log)
         log->println(motor.pole_pairs);
     }
 
-    if (result) *result = r;
+    if (result)
+        *result = r;
     return pp;
 }
-
 
 // FOC loop
 // motor.loopFOC()
@@ -313,7 +309,6 @@ void FOC_lar::update(void)
     motor.move(target_voltage);
 }
 
-
 // Target voltage
 
 void FOC_lar::setTargetVoltage(float voltage)
@@ -325,7 +320,6 @@ float FOC_lar::getTargetVoltage(void)
 {
     return target_voltage;
 }
-
 
 // Torque command: torque = _torque_per_volt * voltage
 
@@ -343,7 +337,7 @@ bool FOC_lar::setTargetTorque(float torque_nm)
 {
     if (_torque_per_volt <= 0.0f)
     {
-        return false;   // not calibrated
+        return false; // not calibrated
     }
 
     setTargetVoltage(torque_nm / _torque_per_volt);
@@ -364,7 +358,7 @@ bool FOC_lar::setTargetTorque(float torque_nm, float speed_rad_s)
 {
     if (_torque_per_volt <= 0.0f)
     {
-        return false;   // not calibrated
+        return false; // not calibrated
     }
 
     setTargetVoltage(torque_nm / _torque_per_volt + _back_emf * speed_rad_s);
@@ -380,7 +374,6 @@ float FOC_lar::getMaxTorque(void)
 {
     return _voltage_limit * _torque_per_volt;
 }
-
 
 // Serial input: one number per line
 
@@ -431,7 +424,6 @@ bool FOC_lar::receiveSerialCommand(Stream &serial)
     return received;
 }
 
-
 // Printing state and help
 
 bool FOC_lar::isPrinting(void) const
@@ -455,7 +447,6 @@ void FOC_lar::printHelp(Print &out)
     out.println(F("***"));
 }
 
-
 // Position relative to our zero
 
 double FOC_lar::getReportedPosition(void)
@@ -468,7 +459,6 @@ void FOC_lar::resetReportedZero(void)
     _position_zero = get_position();
 }
 
-
 // Status line
 
 String FOC_lar::getStatusString(void)
@@ -479,7 +469,6 @@ String FOC_lar::getStatusString(void)
     output += fixed_float(target_voltage, 5, 2);
     return output;
 }
-
 
 // Summary after init
 
@@ -493,7 +482,6 @@ void FOC_lar::printSummary(Print &out)
 
     printAlignment(out);
 }
-
 
 // Alignment values, ready to paste
 

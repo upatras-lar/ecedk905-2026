@@ -24,12 +24,12 @@
 
 #include <AS5600_lar.h>
 
-#define BRAKED_MODE 0               // 0: driver disabled (free), 1: driver enabled at 0 V (electrical braking)
+#define BRAKED_MODE 0 // 0: driver disabled (free), 1: driver enabled at 0 V (electrical braking)
 
-#define DRIVER_EN_PIN 8             // driver enable pin
-#define LOG_RATE_HZ 200             // samples per second
-#define ZERO_TIME_S 1.0f            // averaging time of the rest angle
-#define RUN_TIME_S 30.0f            // logging time after '#GO'
+#define DRIVER_EN_PIN 8  // driver enable pin
+#define LOG_RATE_HZ 200  // samples per second
+#define ZERO_TIME_S 1.0f // averaging time of the rest angle
+#define RUN_TIME_S 30.0f // logging time after '#GO'
 
 #if BRAKED_MODE
 #include <FOC_lar.h>
@@ -42,8 +42,12 @@
 FOC_lar foc(MOTOR_POLE_PAIRS, 11, 10, 9, DRIVER_EN_PIN);
 #endif
 
-
-enum State { IDLE, ZEROING, LOGGING };
+enum State
+{
+    IDLE,
+    ZEROING,
+    LOGGING
+};
 
 State state = IDLE;
 bool ran_once = false;
@@ -55,7 +59,6 @@ unsigned long t_state_us = 0;
 unsigned long t_last_log_us = 0;
 unsigned long t_prompt_ms = 0;
 
-
 void printHelp()
 {
     Serial.println(F("***"));
@@ -65,7 +68,6 @@ void printHelp()
     Serial.println(F("h : this help"));
     Serial.println(F("***"));
 }
-
 
 void setup()
 {
@@ -78,27 +80,28 @@ void setup()
     // sensor, driver and motor init without the alignment (the shaft does not move)
     if (!foc.beginHardware(MOTOR_SUPPLY_VOLTAGE, MOTOR_VOLTAGE_LIMIT, 1.0f))
     {
-        while (1);
+        while (1)
+            ;
     }
     foc.motor.enable();
-    foc.motor.setPhaseVoltage(0.0f, 0.0f, 0.0f);     // all phases at the same duty: no net voltage
+    foc.motor.setPhaseVoltage(0.0f, 0.0f, 0.0f); // all phases at the same duty: no net voltage
 #else
     pinMode(DRIVER_EN_PIN, OUTPUT);
-    digitalWrite(DRIVER_EN_PIN, LOW);                // phases floating
+    digitalWrite(DRIVER_EN_PIN, LOW); // phases floating
     if (!AS5600_lar_begin())
     {
         Serial.println(F("#ERROR: could not read the AS5600, check the wiring."));
-        while (1);
+        while (1)
+            ;
     }
 #endif
 
     printHelp();
 }
 
-
 void loop()
 {
-    update_sensor();                    // as often as possible: keeps the angle and the turns up to date
+    update_sensor(); // as often as possible: keeps the angle and the turns up to date
 
     while (Serial.available())
     {

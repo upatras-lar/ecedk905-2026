@@ -1,6 +1,5 @@
 #include <FOC_lar.h>
 
-
 // Definitions
 
 #define MOTOR_SUPPLY_VOLTAGE 12.0f
@@ -11,11 +10,9 @@
 // Start low. Increase to 1.5 or 2 V if the rotor doesn't follow the electrical field.
 #define FOC_ESTIMATE_VOLTAGE 1.0f
 
-
 // The real number of pole pairs is not known yet: start with 1.
 // SimpleFOCMini v1.0 + Arduino UNO: pole pairs, IN1, IN2, IN3, EN
 FOC_lar foc(1, 11, 10, 9, 8);
-
 
 void setup()
 {
@@ -31,7 +28,8 @@ void setup()
     // sensor + driver + motor init, without FOC alignment
     if (!foc.beginHardware(MOTOR_SUPPLY_VOLTAGE, MOTOR_VOLTAGE_LIMIT, SENSOR_ALIGN_VOLTAGE))
     {
-        while (1);
+        while (1)
+            ;
     }
 
     // ONE call: estimates pole pairs and sets motor.pole_pairs / motor.sensor_direction
@@ -40,7 +38,8 @@ void setup()
 
     if (pp <= 0)
     {
-        while (1);
+        while (1)
+            ;
     }
 
     Serial.print(F("Result: "));
@@ -52,14 +51,14 @@ void setup()
     // optional: continue with the FOC alignment using the measured values
     if (!foc.alignFOC())
     {
-        while (1);
+        while (1)
+            ;
     }
 
     foc.printSummary(Serial);
     Serial.println(F("Suggested target voltages: 0.0, 0.2, 0.5, 1.0, 1.5 V"));
     foc.printHelp(Serial);
 }
-
 
 void loop()
 {

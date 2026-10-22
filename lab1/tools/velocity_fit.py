@@ -473,18 +473,28 @@ def report(dirs, torque_per_volt):
                 if ke is None:
                     continue
                 kt_est = 1.5 * ke
-                r_est = kt_est / torque_per_volt
+                r_phase_model = kt_est / torque_per_volt
+                r_line_line_implied = (2.0 / 3.0) * r_phase_model
                 print(
-                    f"  Ke,eff ({label}) = {ke:.5f} V*s/rad (commanded-voltage/speed slope)\n"
-                    f"  Kt,eff = 1.5*Ke,eff = {kt_est:.5f} N*m/A; "
-                    f"indirect R estimate = Kt,eff/k = {r_est:.3f} ohm"
+                    f"  Ke,eff ({label}) = {ke:.5f} V*s/rad "
+                    "(effective commanded-voltage/speed slope, not directly measured BEMF)\n"
+                    f"  Kt,eff = 1.5*Ke,eff = {kt_est:.5f} N*m/A\n"
+                    f"  Model-based resistance estimate R_phase,model = Kt,eff/k = "
+                    f"{r_phase_model:.3f} ohm\n"
+                    f"  Implied terminal resistance if R_phase,model represents one physical delta winding: "
+                    f"R_LL = (2/3)*R_phase,model = {r_line_line_implied:.3f} ohm "
+                    "<-- compare with the multimeter only as a rough cross-check"
                 )
             print(
-                "  WARNING: this is an indirect estimate, not a resistance measurement.\n"
-                "  Ke is inferred from commanded voltage vs free-shaft speed, so inverter voltage scaling,\n"
-                "  friction, and calibration conventions can bias the result.\n"
-                "  For this FIT1034 delta connection, the SimpleFOC conversion is R_phase = 1.5*R_line-line.\n"
-                "  Measure line-to-line resistance directly and use the convention required by your library version."
+                "  IMPORTANT: These are indirect model-based estimates, not resistance measurements.\n"
+                "  For a balanced delta motor, the exact DC-resistance conversion is\n"
+                "  R_LL = (2/3)*R_delta, so one physical winding has R_delta = 1.5*R_LL.\n"
+                "  The conversion above is conditional: Kt,eff/k must correspond to the resistance of one\n"
+                "  physical winding under the same voltage/current convention. The speed-derived Ke,eff\n"
+                "  and empirical torque-per-commanded-voltage slope k do not establish that by themselves.\n"
+                "  Inverter voltage scaling, friction, current/voltage conventions, and calibration can bias\n"
+                "  the estimate. Measure all three terminal-to-terminal resistances directly and use the\n"
+                "  phase-resistance convention required by your SimpleFOC/control configuration."
             )
     print("======================================================\n")
 
@@ -770,7 +780,7 @@ def main():
     ap.add_argument(
         "--torque-per-volt", "--torque-const", dest="torque_per_volt",
         type=float, default=None,
-        help="torque-vs-commanded-voltage slope k (N*m/V) from torque_fit_lstsq.py; enables a rough indirect resistance estimate (old --torque-const alias accepted)",
+        help="empirical torque-vs-commanded-voltage slope k (N*m/V) from torque_fit_lstsq.py; enables a conditional, rough model-based resistance cross-check (old --torque-const alias accepted)",
     )
     ap.add_argument(
         "--speed", type=float, nargs="+", default=None, metavar="RPM",

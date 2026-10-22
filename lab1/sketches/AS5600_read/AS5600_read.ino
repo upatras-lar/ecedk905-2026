@@ -1,15 +1,12 @@
 #include <AS5600_lar.h>
 
-
 // Definitions
 
-#define PRINT_INTERVAL_MS 100       // print period (10 Hz)
-#define VELOCITY_EMA_ALPHA 0.05     // velocity filter coefficient (1.0 = no filtering)
+#define PRINT_INTERVAL_MS 100   // print period (10 Hz)
+#define VELOCITY_EMA_ALPHA 0.05 // velocity filter coefficient (1.0 = no filtering)
 
-
-double position_zero = 0.0;         // reporting zero position (rad), set with 'z'
-bool printing = true;               // 'p' toggles the periodic output
-
+double position_zero = 0.0; // reporting zero position (rad), set with 'z'
+bool printing = true;       // 'p' toggles the periodic output
 
 void printHelp()
 {
@@ -19,7 +16,6 @@ void printHelp()
     Serial.println(F("h : this help"));
     Serial.println(F("***"));
 }
-
 
 void setup()
 {
@@ -34,14 +30,14 @@ void setup()
     if (!AS5600_lar_begin())
     {
         Serial.println(F("ERROR: Could not read AS5600, check wiring."));
-        while (1);
+        while (1)
+            ;
     }
 
     print_sensor_info(Serial);
     print_velocity_ema_settings(Serial);
     printHelp();
 }
-
 
 void loop()
 {

@@ -31,41 +31,36 @@
 #include <FOC_lar.h>
 #include <LoadCell_lar.h>
 
-
 // Motor definitions
 
-#define MOTOR_POLE_PAIRS NOT_SET    // measured with find_pole_pairs_number
-#define MOTOR_SUPPLY_VOLTAGE 12.0f  // motor supply
-#define MOTOR_VOLTAGE_LIMIT 3.0f    // last voltage of the sweep
-#define SENSOR_ALIGN_VOLTAGE 1.0f   // voltage used for FOC sensor alignment
+#define MOTOR_POLE_PAIRS NOT_SET   // measured with find_pole_pairs_number
+#define MOTOR_SUPPLY_VOLTAGE 12.0f // motor supply
+#define MOTOR_VOLTAGE_LIMIT 3.0f   // last voltage of the sweep
+#define SENSOR_ALIGN_VOLTAGE 1.0f  // voltage used for FOC sensor alignment
 
 // Stored alignment (see the procedure). Leave them as they are to align at every power-up.
 // After a normal alignment with the shaft free, motor_AS5600 prints the two lines to paste here.
-#define STORED_ZERO_ELECTRIC_ANGLE NOT_SET          // e.g. 3.12345f  (values printed by motor_AS5600)
-#define STORED_SENSOR_DIRECTION Direction::UNKNOWN  // Direction::CW or Direction::CCW
-
+#define STORED_ZERO_ELECTRIC_ANGLE NOT_SET         // e.g. 3.12345f  (values printed by motor_AS5600)
+#define STORED_SENSOR_DIRECTION Direction::UNKNOWN // Direction::CW or Direction::CCW
 
 // Sweep definitions
 
-#define DATA_POINTS 50              // number of equal voltage increases (DATA_POINTS + 1 rows, the first is 0 V)
-#define STAB_TIME_S 4.0f            // wait after every increase (s). The load cell average needs about 3 s
-#define VOLTAGE_SIGN 1              // +1 or -1: choose the direction that pushes the rod onto the load cell
-
+#define DATA_POINTS 50   // number of equal voltage increases (DATA_POINTS + 1 rows, the first is 0 V)
+#define STAB_TIME_S 4.0f // wait after every increase (s). The load cell average needs about 3 s
+#define VOLTAGE_SIGN 1   // +1 or -1: choose the direction that pushes the rod onto the load cell
 
 // Load cell definitions
 
-#define HX711_DOUT_PIN 4            // MCU > HX711 DOUT
-#define HX711_SCK_PIN 5             // MCU > HX711 SCK
-#define DEFAULT_CAL_FACTOR 650.00   // used if no valid value is stored in EEPROM
-#define EEPROM_CAL_ADDRESS 0        // EEPROM address of the calibration factor
-#define LOADCELL_REVERSE 0          // 1 = invert the sign of the load cell reading
-#define ROD_LENGTH_M NOT_SET        // shaft axis to be set -> load cell contact point (m)
-
+#define HX711_DOUT_PIN 4          // MCU > HX711 DOUT
+#define HX711_SCK_PIN 5           // MCU > HX711 SCK
+#define DEFAULT_CAL_FACTOR 650.00 // used if no valid value is stored in EEPROM
+#define EEPROM_CAL_ADDRESS 0      // EEPROM address of the calibration factor
+#define LOADCELL_REVERSE 0        // 1 = invert the sign of the load cell reading
+#define ROD_LENGTH_M NOT_SET      // shaft axis to be set -> load cell contact point (m)
 
 #if DATA_POINTS < 1
 #error "DATA_POINTS must be at least 1"
 #endif
-
 
 // SimpleFOCMini v1.0 + Arduino UNO: pole pairs, IN1, IN2, IN3, EN
 FOC_lar foc(MOTOR_POLE_PAIRS, 11, 10, 9, 8);
@@ -73,7 +68,6 @@ LoadCell_lar cell(HX711_DOUT_PIN, HX711_SCK_PIN);
 
 bool sweep_done_once = false;
 bool printing = true;
-
 
 void printHelp()
 {
@@ -84,7 +78,6 @@ void printHelp()
     Serial.println(F("h : this help"));
     Serial.println(F("***"));
 }
-
 
 // Handles the serial keys that work everywhere (idle and during a sweep).
 // Returns true when 'x' was received.
@@ -118,7 +111,6 @@ bool handleSerial(bool &start_requested)
 
     return abort;
 }
-
 
 // Runs the motor loop and the load cell for a given time.
 // Returns false if 'x' was received (abort).
@@ -211,7 +203,6 @@ void runSweep()
     Serial.println(F("#Send 's' to repeat."));
 }
 
-
 void setup()
 {
     Serial.begin(115200);
@@ -223,7 +214,8 @@ void setup()
     // load cell: start, stabilize and tare
     if (!cell.begin(DEFAULT_CAL_FACTOR))
     {
-        while (1);
+        while (1)
+            ;
     }
     if (LOADCELL_REVERSE)
     {
@@ -239,13 +231,13 @@ void setup()
     if (!foc.begin(MOTOR_SUPPLY_VOLTAGE, MOTOR_VOLTAGE_LIMIT, SENSOR_ALIGN_VOLTAGE,
                    STORED_ZERO_ELECTRIC_ANGLE, STORED_SENSOR_DIRECTION))
     {
-        while (1);
+        while (1)
+            ;
     }
 
     Serial.println("Sweeping voltage in the range: 0.0 to " + String(MOTOR_VOLTAGE_LIMIT) + " V.");
     printHelp();
 }
-
 
 void loop()
 {

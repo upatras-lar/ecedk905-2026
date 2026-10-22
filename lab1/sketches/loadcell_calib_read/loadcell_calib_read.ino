@@ -1,17 +1,14 @@
 #include <LoadCell_lar.h>
 
-
 // Definitions
 
-#define HX711_DOUT_PIN 4            // MCU > HX711 DOUT
-#define HX711_SCK_PIN 5             // MCU > HX711 SCK
-#define DEFAULT_CAL_FACTOR 650.00f  // used if no valid value is stored in EEPROM
-#define EEPROM_CAL_ADDRESS 0        // EEPROM address of the calibration factor
-#define ROD_LENGTH_M 0.100f         // lever arm: shaft axis -> load cell contact point (m)
-
+#define HX711_DOUT_PIN 4           // MCU > HX711 DOUT
+#define HX711_SCK_PIN 5            // MCU > HX711 SCK
+#define DEFAULT_CAL_FACTOR 650.00f // used if no valid value is stored in EEPROM
+#define EEPROM_CAL_ADDRESS 0       // EEPROM address of the calibration factor
+#define ROD_LENGTH_M 0.100f        // lever arm: shaft axis -> load cell contact point (m)
 
 LoadCell_lar cell(HX711_DOUT_PIN, HX711_SCK_PIN);
-
 
 void setup()
 {
@@ -22,7 +19,8 @@ void setup()
     // start, stabilize and tare (keep the rod free during startup)
     if (!cell.begin(DEFAULT_CAL_FACTOR))
     {
-        while (1);
+        while (1)
+            ;
     }
 
     if (cell.loadCalFactor(EEPROM_CAL_ADDRESS))
@@ -37,7 +35,6 @@ void setup()
 
     cell.printHelp();
 }
-
 
 void loop()
 {
